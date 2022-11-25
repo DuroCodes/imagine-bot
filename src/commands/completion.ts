@@ -21,6 +21,7 @@ export default new SparkCommand({
     const completion = await openai.createCompletion({
       model: 'text-davinci-002',
       prompt,
+      max_tokens: 1024,
     });
 
     const text = completion.data.choices[0]?.text!;

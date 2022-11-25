@@ -1,5 +1,5 @@
 import { CommandType, Plugins, SparkCommand } from '@spark.ts/handler';
-import { ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
+import { ApplicationCommandOptionType, AttachmentBuilder, EmbedBuilder } from 'discord.js';
 import { openai } from '../util/openai.js';
 
 export default new SparkCommand({
@@ -13,21 +13,31 @@ export default new SparkCommand({
     },
   ],
   plugins: [Plugins.Publish()],
-  async run({ interaction, args }) {
+  async run({ client, interaction, args }) {
     const prompt = args.getString('prompt')!;
 
     await interaction.deferReply();
 
-    const completion = await openai.createImage({
-      prompt,
-      n: 1,
-      size: '1024x1024',
-    });
+    try {
+      const completion = await openai.createImage({
+        prompt,
+        n: 1,
+        size: '1024x1024',
+      });
 
-    const imageUrl = completion.data.data[0]?.url!;
+      const imageUrl = completion.data.data[0]?.url!;
 
-    const image = new AttachmentBuilder(imageUrl, { name: 'image.png' });
+      const image = new AttachmentBuilder(imageUrl, { name: 'image.png' });
 
-    interaction.followUp({ files: [image] });
+      return interaction.followUp({ files: [image] });
+    } catch (e) {
+      const embed = new EmbedBuilder()
+        .setTitle('❌ Error')
+        .setColor('Red')
+        .setDescription(`There was an error creating your image.\n\`\`\`${e}\`\`\``);
+
+      client.logger.error(e);
+      return interaction.followUp({ embeds: [embed] });
+    }
   }
 });
